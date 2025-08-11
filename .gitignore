@@ -1,0 +1,38 @@
+# Ignora los archivos de Python creados durante la compilación
+*.pyc
+__pycache__/
+
+# Directorios de entornos virtuales
+venv/
+env/
+.venv/
+
+# Paquetes y dependencias instaladas
+# Se recomienda ignorar estas carpetas
+lib/
+lib64/
+include/
+bin/
+
+# Archivos de datos del IDE
+.idea/             # Directorio de PyCharm
+.vscode/           # Directorio de Visual Studio Code
+*.iml              # Archivos de IntelliJ
+
+# Archivos de pruebas y reportes
+.pytest_cache/
+.coverage
+
+# Archivos de configuración y datos sensibles
+.env               # Archivo para variables de entorno (contraseñas, etc.)
+.flaskenv          # Archivo de entorno para Flask
+instance/          # Carpeta de instancia en Flask
+db.sqlite3         # Bases de datos locales
+*.log
+*.sqlite
+/dist/
+/build/
+
+# Archivos temporales del sistema operativo
+.DS_Store          # Archivo de macOS
+Thumbs.db          # Archivo de Windows
