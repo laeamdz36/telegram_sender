@@ -13,3 +13,9 @@ services:
       - .env.telegram.chat_id
     environment:
       app_mode: test
+
+  secrets:
+    .env.telegram.token:
+      file: ./secrets/.env.telegram.token
+    .env.telegram.chat_id:
+      file: ./secrets/.env.telegram.chat_id
