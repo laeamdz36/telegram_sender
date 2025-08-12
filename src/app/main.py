@@ -6,7 +6,8 @@ from app.load_config import load_config
 from app.logger import logger
 from app.dates_infos import get_message
 
-BOT_TOKEN = "7977273455:AAHY_I3pnTbi-6FiHJazXGF4WVnrNtONsdU"
+
+BOT_TOKEN = ""
 
 
 async def send_msg(msg="Empty message"):
