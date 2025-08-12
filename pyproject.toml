@@ -1,0 +1,26 @@
+[project]
+name = "telegram_reporter"
+version = "1.0.0"
+description = "A simple application to send notifications to Telegram."
+authors = [
+    { name = "Luis Mdz", email = "luis3mendez6@gmail.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["telegram", "reporter", "notifications"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["python-telegram-bot>=22.3","APScheduler>=3.11.0"]
+
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["app"]

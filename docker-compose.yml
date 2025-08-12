@@ -1,0 +1,15 @@
+name: telegram_sender
+
+services:
+  py_telebot:
+    build:
+      context: .src/app
+      dockerfile: Dockerfile
+    image: telegram_sender:1.0.0
+    container_name: py_telebot
+    restart: always
+    secrets:
+      - .env.telegram.token
+      - .env.telegram.chat_id
+    environment:
+      app_mode: test

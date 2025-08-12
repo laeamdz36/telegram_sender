@@ -22,9 +22,10 @@ bin/
 # Archivos de pruebas y reportes
 .pytest_cache/
 .coverage
+src/telegram_reporter.egg-info
 
 # Archivos de configuración y datos sensibles
-.env               # Archivo para variables de entorno (contraseñas, etc.)
+.env
 .flaskenv          # Archivo de entorno para Flask
 instance/          # Carpeta de instancia en Flask
 db.sqlite3         # Bases de datos locales
@@ -32,6 +33,8 @@ db.sqlite3         # Bases de datos locales
 *.sqlite
 /dist/
 /build/
+
+.secrets/
 
 # Archivos temporales del sistema operativo
 .DS_Store          # Archivo de macOS
