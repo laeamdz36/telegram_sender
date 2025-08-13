@@ -12,12 +12,10 @@ def init_logger():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)]
     )
-    # Silenciar los logs de la librería de telegram-bot
+    # hide logs from telegram bot and httpx
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     return logging.getLogger("main_app")
 
 
-# Si quieres que el logger se configure una sola vez
-# y se pueda acceder a él en toda la aplicación
 logger = init_logger()

@@ -11,9 +11,9 @@ BOT_TOKEN = ""
 
 
 async def send_msg(msg="Empty message"):
-    """Send a message to the Telegram bot."""
-    bot = Bot(token=BOT_TOKEN)
+    """Send a message to the Telegram bot, executed by the scheduler."""
 
+    bot = Bot(token=BOT_TOKEN)
     await bot.send_message(chat_id="1571717715", text=msg, parse_mode="HTML")
 
 
