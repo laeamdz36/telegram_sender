@@ -1,20 +1,23 @@
 """Aplication to send notifications to telegram."""
 import asyncio
 import datetime as dt
+import os
 from telegram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.load_config import load_config
 from app.logger import logger
 from app.dates_infos import get_message
+from dotenv import load_dotenv
 
-
-BOT_TOKEN = ""
+# load loca env
+load_dotenv()
 
 
 async def send_msg(msg="Empty message"):
     """Send a message to the Telegram bot, executed by the scheduler."""
 
-    bot = Bot(token=BOT_TOKEN)
+    token = os.environ["token"]
+    bot = Bot(token=token)
     await bot.send_message(chat_id="1571717715", text=msg, parse_mode="HTML")
 
 
