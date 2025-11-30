@@ -1,5 +1,6 @@
 """Snippet for start server fast Api"""
 
+import datetime as dt
 from fastapi import FastAPI
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,7 @@ class InMessage(BaseModel):
     """Define the innser structure of the message"""
 
     message: str
+    sensor: str
 
 
 @lru_cache()
@@ -45,6 +47,17 @@ async def send_message(text):
         return None
     bot = Bot(token=settings.token)
     await bot.send_message(chat_id=settings.chat_id, text=text, parse_mode="HTML")
+
+
+@app.post("/send_message/")
+async def send_msg(msg: InMessage):
+    """Receive the json"""
+    # insert datetime
+    today = dt.datetime.now().strftime("%Y-%d-%m %H:%M:%S")
+    text = msg.message + " " + today
+    text += f"\nSensor: {msg.sensor}"
+    task = asyncio.create_task(send_message(text))
+    await task
 
 
 async def main():
