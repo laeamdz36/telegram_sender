@@ -19,7 +19,8 @@ ENV_FILE_PATH = BASE_DIR / ".env"
 class Settings(BaseSettings):
     """Settings to load env file"""
     token: str | None = Field(default=None)
-    chat_id: str | None = Field(default=None)
+    chatid_local: str | None = Field(default=None)
+    chatid_projectIzta: str | None = Field(default=None)
     storm_key: str | None = Field(default=None)
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
@@ -27,29 +28,49 @@ class Settings(BaseSettings):
     )
 
 
-class InMessage(BaseModel):
+class SensorReport(BaseModel):
     """Define the innser structure of the message"""
 
-    message: str
-    Room: str
-    LivingRoom: str
+    message: str  # relevant data to nitify drom ignition
+    Room: str  # data for sensor in room
+    LivingRoom: str  # data for sensor in living room
+
+
+class InMessage(BaseModel):
+    """Simple message validation"""
+
+    text: str
 
 
 @lru_cache()
 def get_settings():
     """Init settings"""
-    return Settings()
+    try:
+        settings = Settings()
+    except ValidationError as e:
+        print(f"Key error on env file - {e}")
+        settings = None
+    return settings
 
 
 async def send_message(text):
     """Send message with telegram bot"""
-    try:
-        settings = get_settings()
-    except ValidationError as e:
-        print(f"Key error on env file - {e}")
-        return None
-    bot = Bot(token=settings.token)
-    await bot.send_message(chat_id=settings.chatid, text=text, parse_mode="HTML")
+
+    settings = get_settings()
+    if settings.token:
+        bot = Bot(token=settings.token)
+        async with bot:
+            await bot.send_message(chat_id=settings.chatid_local, text=text, parse_mode="HTML")
+
+
+async def send_tel_izta(msg):
+    """Send message to telegram group"""
+
+    settings = get_settings()
+    if settings.token:
+        bot = Bot(token=settings.token)
+        async with bot:
+            await bot.send_message(chat_id=settings.chatid_projectIzta, text=msg, parse_mode="HTML")
 
 
 async def get_weather():
@@ -64,8 +85,8 @@ async def get_weather():
 
 
 @app.post("/send_message/")
-async def send_msg(msg: InMessage):
-    """Receive the json"""
+async def send_msg(msg: SensorReport):
+    """Send telegram for weather sensor data for home"""
     # insert datetime
     today = dt.datetime.now().strftime("%Y-%d-%m %H:%M:%S")
     text = msg.message + " " + today
@@ -75,10 +96,20 @@ async def send_msg(msg: InMessage):
     task = asyncio.create_task(send_message(text))
     await task
 
+
+@app.post("/test_izta/")
+async def notify_izta(msg: InMessage):
+    """Test chatid_local for telegram group"""
+
+    task = asyncio.create_task(send_tel_izta(msg.text))
+    await task
+
 if __name__ == "__main__":
     print(ENV_FILE_PATH)
     try:
         settings = get_settings()
         print(settings.token)
+        print(settings.chatid_local)
+        print(settings.chatid_projectIzta)
     except ValidationError:
         print("Settings validation error")
