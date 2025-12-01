@@ -27,7 +27,7 @@ def get_elapsed_hours():
     return elapsed_hours
 
 
-def get_message():
-    """Build a message with the initial date."""
-    message = f"Dia **{get_elapsed_days():,}** comenzamos"
+def get_message() -> str:
+    """Return a msg with total days elapsed since config date file"""
+    message = f"Dia {get_elapsed_days():,} comenzamos"
     return message

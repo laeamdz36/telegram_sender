@@ -1,12 +1,12 @@
 """Snippet for start server fast Api"""
 
 import datetime as dt
+from functools import lru_cache
 from fastapi import FastAPI
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import ValidationError
 # from pydantic_settings import SettingsConfigDict
-from functools import lru_cache
 from telegram import Bot
 import asyncio
 
