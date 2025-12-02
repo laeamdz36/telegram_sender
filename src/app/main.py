@@ -73,6 +73,16 @@ async def send_tel_izta(msg):
             await bot.send_message(chat_id=settings.chatid_projectIzta, text=msg, parse_mode="HTML")
 
 
+async def dev_tel_izta(msg):
+    """Development function to test message sent to izta group telegram"""
+
+    settings = get_settings()
+    if settings.token:
+        bot = Bot(token=settings.token)
+        async with bot:
+            await bot.send_message(chat_id=settings.chatid_local, text=msg, parse_mode="HTML")
+
+
 async def get_weather():
     """Get the SMN api data"""
 
@@ -97,12 +107,21 @@ async def send_msg(msg: SensorReport):
     await task
 
 
-@app.post("/test_izta/")
+@app.post("/send_izta/")
 async def notify_izta(msg: InMessage):
     """Test chatid_local for telegram group"""
 
     task = asyncio.create_task(send_tel_izta(msg.text))
     await task
+
+
+@app.post("/test_izta_dev/")
+async def dev_notify_izta(msg: InMessage):
+    """Development function for send message to teelgram group"""
+    msg = get_message()
+    task = asyncio.create_task(dev_tel_izta(msg))
+    await task
+
 
 if __name__ == "__main__":
     print(ENV_FILE_PATH)
