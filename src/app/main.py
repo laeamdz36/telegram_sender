@@ -111,7 +111,8 @@ async def send_msg(msg: SensorReport):
 async def notify_izta(msg: InMessage):
     """Test chatid_local for telegram group"""
 
-    task = asyncio.create_task(send_tel_izta(msg.text))
+    msg = get_message()
+    task = asyncio.create_task(send_tel_izta(msg))
     await task
 
 
