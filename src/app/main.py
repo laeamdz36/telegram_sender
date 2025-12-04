@@ -14,6 +14,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pydantic import BaseModel, ValidationError, Field
 from app.load_config import load_config
 import logging
+from app.dev.dev_datetimes import get_system_time
 from app.dates_infos import get_message
 print(">>> EXECUTANDO app/main.py (PID)",
       __import__("os").getpid(), "stdout:", sys.stdout)
@@ -59,6 +60,12 @@ class InMessage(BaseModel):
     text: str
 
 
+class CurrentTimeResponse(BaseModel):
+    """Schema for the current system time response"""
+    status: str
+    current_time: str
+
+
 @lru_cache()
 def get_settings():
     """Init settings"""
@@ -95,14 +102,6 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
-async def get_weather_data():
-    """Call SMN weather endpoints for forecast data"""
-
-    # this task need to be ascheduled every 6 hours
-    # execute the main async task in the weather module
-    pass
-
-
 async def send_message(text):
     """Send message with telegram bot"""
 
@@ -123,16 +122,6 @@ async def send_tel_izta(msg):
             await bot.send_message(chat_id=settings.chatid_projectIzta, text=msg, parse_mode="HTML")
 
 
-async def dev_tel_izta(msg):
-    """Development function to test message sent to izta group telegram"""
-
-    settings = get_settings()
-    if settings.token:
-        bot = Bot(token=settings.token)
-        async with bot:
-            await bot.send_message(chat_id=settings.chatid_local, text=msg, parse_mode="HTML")
-
-
 async def send_grafana_msg(msg: str = None):
     """Send a message to garfana channel"""
 
@@ -141,7 +130,7 @@ async def send_grafana_msg(msg: str = None):
         bot = Bot(token=settings.token)
         chat_id = settings.chatid_grafanaNotify
         async with bot:
-            await bot.send_message(chat_id=chat_id, text="TEST", parse_mode="HTML")
+            await bot.send_message(chat_id=idCchat_idhat, text="TEST", parse_mode="HTML")
 
 
 async def send_dev_channel(msg):
@@ -150,8 +139,9 @@ async def send_dev_channel(msg):
     settings = get_settings()
     if settings.token:
         bot = Bot(token=settings.token)
+        chat_id = settings.chatid_devChannel
         async with bot:
-            await bot.send_message(chat_id=settings.chatid_devChannel, text=msg, parse_mode="HTML")
+            await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
 
 
 async def get_weather():
@@ -187,14 +177,6 @@ async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     return {"status": "ok"}
 
 
-@app.post("/test_izta_dev/")
-async def dev_notify_izta(msg: InMessage):
-    """Development function for send message to teelgram group"""
-    msg = get_message()
-    task = asyncio.create_task(dev_tel_izta(msg))
-    await task
-
-
 @app.post("/pub_chanel1/")
 async def pub_channel1(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
@@ -213,6 +195,13 @@ async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     background_task.add_task(send_dev_channel, msg)
     return {"status": "ok"}
 
+
+@app.get("/utils/get_currentDatetimeSys", response_model=CurrentTimeResponse)
+async def get_system_datetime():
+    """Return the current dattiem in the system"""
+
+    current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return {"status": "ok", "current_time": current_time}
 
 if __name__ == "__main__":
     print(ENV_FILE_PATH)

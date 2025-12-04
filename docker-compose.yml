@@ -10,5 +10,6 @@ services:
     restart: always
     environment:
       app_mode: test
+      TZ: America/Mexico_City
     ports:
       - "8036:8036"

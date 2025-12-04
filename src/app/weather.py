@@ -15,7 +15,7 @@ async def process_url1():
     GZ_URL_3 = "https://smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=3"
     # request data from the endpoint
     logger.info("Requesting info from -> %s",  GZ_URL_3)
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             response = await client.get(GZ_URL_3)
             response.raise_for_status()
