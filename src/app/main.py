@@ -150,9 +150,8 @@ async def send_dev_channel(msg):
     settings = get_settings()
     if settings.token:
         bot = Bot(token=settings.token)
-        chat_id = settings.chatid_devChannel
         async with bot:
-            await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
+            await bot.send_message(chat_id=settings.chatid_devChannel, text=msg, parse_mode="HTML")
 
 
 async def get_weather():
