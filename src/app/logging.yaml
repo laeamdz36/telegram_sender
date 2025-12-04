@@ -1,0 +1,38 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  default:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: default
+    level: INFO
+    stream: ext://sys.stdout
+
+loggers:
+  uvicorn:
+    handlers: [console]
+    level: INFO
+    propagate: False
+
+  uvicorn.error:
+    handlers: [console]
+    level: INFO
+    propagate: False
+
+  uvicorn.access:
+    handlers: [console]
+    level: INFO
+    propagate: False
+
+  app_telebot:
+    handlers: [console]
+    level: DEBUG
+    propagate: False
+
+root:
+  level: INFO
+  handlers: [console]
