@@ -139,9 +139,9 @@ async def send_grafana_msg(msg: str = None):
     settings = get_settings()
     if settings.token:
         bot = Bot(token=settings.token)
-        id = settings.chatid_grafanaNotify
+        chat_id = settings.chatid_grafanaNotify
         async with bot:
-            await bot.send_message(chat_id=id, text="TEST", parse_mode="HTML")
+            await bot.send_message(chat_id=chat_id, text="TEST", parse_mode="HTML")
 
 
 async def send_dev_channel(msg):
@@ -150,9 +150,9 @@ async def send_dev_channel(msg):
     settings = get_settings()
     if settings.token:
         bot = Bot(token=settings.token)
-        id = settings.chatid_devChannel
+        chat_id = settings.chatid_devChannel
         async with bot:
-            await bot.send_message(chat_id=id, text=msg, parse_mode="HTML")
+            await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
 
 
 async def get_weather():
@@ -210,11 +210,9 @@ async def pub_channel1(msg: InMessage, background_task: BackgroundTasks):
 async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
 
-    settings = get_settings()
     msg = get_message()
-    chatid = settings.chatid_grafanaNotify
     background_task.add_task(send_dev_channel, msg)
-    return {"status": "ok", "chatid": chatid}
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":
