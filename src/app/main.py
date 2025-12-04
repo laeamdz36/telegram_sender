@@ -144,7 +144,7 @@ async def send_grafana_msg(msg: str = None):
             await bot.send_message(chat_id=id, text="TEST", parse_mode="HTML")
 
 
-async def send_dev_channel():
+async def send_dev_channel(msg):
     """Send data to Dev Channel"""
 
     settings = get_settings()
@@ -152,7 +152,7 @@ async def send_dev_channel():
         bot = Bot(token=settings.token)
         id = settings.chatid_devChannel
         async with bot:
-            await bot.send_message(chat_id=id, text="TEST", parse_mode="HTML")
+            await bot.send_message(chat_id=id, text=msg, parse_mode="HTML")
 
 
 async def get_weather():
@@ -180,12 +180,12 @@ async def send_msg(msg: SensorReport):
 
 
 @app.post("/send_izta/")
-async def notify_izta(msg: InMessage):
+async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     """Test chatid_local for telegram group"""
 
     msg = get_message()
-    task = asyncio.create_task(send_tel_izta(msg))
-    await task
+    background_task.add_task(send_tel_izta, msg)
+    return {"status": "ok"}
 
 
 @app.post("/test_izta_dev/")
@@ -211,8 +211,9 @@ async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
 
     settings = get_settings()
+    msg = get_message()
     chatid = settings.chatid_grafanaNotify
-    background_task.add_task(send_dev_channel)
+    background_task.add_task(send_dev_channel, msg)
     return {"status": "ok", "chatid": chatid}
 
 
