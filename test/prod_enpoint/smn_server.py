@@ -18,7 +18,7 @@ GZ_URL_1 = "/smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=1"
 GZ_URL_3 = "/smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=3"
 
 
-@app.get("/file")
+@app.get(GZ_URL_1)
 async def serve_file_1():
     """Serve the file for the --host 0.0.0.0 --port 8040"""
 

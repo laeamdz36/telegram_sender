@@ -1,0 +1,81 @@
+# --------------------------
+# Python
+# --------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+pip-wheel-metadata/
+.wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --------------------------
+# FastAPI / Uvicorn / Gunicorn
+# No necesitan ignores extra más allá de Python y config
+# --------------------------
+
+# --------------------------
+# Tests
+# --------------------------
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+coverage.xml
+*.cover
+*.coverage
+.cache/
+
+# --------------------------
+# Environment / Secrets
+# --------------------------
+.env
+.env.*
+!.env.example
+
+# --------------------------
+# IDE / Editors
+# --------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --------------------------
+# Docker / Git / Misc
+# --------------------------
+.git/
+.gitignore
+.gitattributes
+Dockerfile*
+dockerfile*
+docker-compose*
+*.log
+logs/
+
+# --------------------------
+# OS System
+# --------------------------
+.DS_Store
+Thumbs.db
