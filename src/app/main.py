@@ -9,12 +9,12 @@ from contextlib import asynccontextmanager
 from telegram import Bot
 import arrow
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.weather import main_weather  # main async execution
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pydantic import BaseModel, ValidationError, Field
 from app.load_config import load_config
 import logging
 from app.dev.dev_datetimes import get_system_time
+from app.weather import request_file
 from app.dates_infos import get_message
 print(">>> EXECUTANDO app/main.py (PID)",
       __import__("os").getpid(), "stdout:", sys.stdout)
@@ -130,7 +130,7 @@ async def send_grafana_msg(msg: str = None):
         bot = Bot(token=settings.token)
         chat_id = settings.chatid_grafanaNotify
         async with bot:
-            await bot.send_message(chat_id=idCchat_idhat, text="TEST", parse_mode="HTML")
+            await bot.send_message(chat_id=chat_id, text="TEST", parse_mode="HTML")
 
 
 async def send_dev_channel(msg):
@@ -155,6 +155,13 @@ async def get_weather():
     storm_endpoint = "https://api.stormglass.io/v2"
 
 
+async def weather_exec():
+    """Call async funciton and return response"""
+
+    result = await request_file()
+    return result
+
+
 @app.post("/send_message/")
 async def send_msg(msg: SensorReport):
     """Send telegram for weather sensor data for home"""
@@ -163,6 +170,10 @@ async def send_msg(msg: SensorReport):
     text = msg.message + " " + today
     text += f"\nRoom: {msg.Room}"
     text += f"\nLiving Room: {msg.LivingRoom}"
+    task_weather = asyncio.create_task(weather_exec())
+    weather_forecast = await task_weather
+    if weather_forecast:
+        text += f"\n{weather_forecast}"
     text += f"\n{get_message()}"
     task = asyncio.create_task(send_message(text))
     await task
@@ -202,6 +213,14 @@ async def get_system_datetime():
 
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {"status": "ok", "current_time": current_time}
+
+
+@app.get("/weather/get_file/")
+async def serve_weather_data():
+    """Function to handle request and processing weather data"""
+
+    # execute the function to request the file
+
 
 if __name__ == "__main__":
     print(ENV_FILE_PATH)
