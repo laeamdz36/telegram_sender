@@ -48,23 +48,40 @@ with open(file_path, "rb") as f:
     data_str = data.decode("utf-8")
     json_data = json.loads(data_str)
 
-df = pd.DataFrame(json_data)
-# print(df.info())
-# print(df.head())
-# print(df["nes"].unique())
-print(df.columns)
-nmun = "Apodaca"
-nes = "Nuevo León"
-# filter = (df["nes"] == "Nuevo León") & (df["nmun"] == nmun)
-# sel_columns = ["hr", "dsem", "hloc", "nhor", "lat",
-#                "lon", "velvien", "temp", "probprec"]
-# print(df[filter][sel_columns])
-# print(df[filter].columns)
-# print(df[filter].loc[["lat", "lon", "tmax", "tmin", "velvien", "temp"]])
+if json_data:
+    nmun = "Apodaca"
+    nes = "Nuevo León"
+    dias_es = {
+        0: "lunes",
+        1: "martes",
+        2: "miércoles",
+        3: "jueves",
+        4: "viernes",
+        5: "sábado",
+        6: "domingo",
+    }
+    df = pd.DataFrame(json_data)
+    for col in df.columns:
+        print(col)
+    df["date"] = pd.to_datetime(df["dloc"], format="%Y%m%dT%H")
+    df["dow"] = df["date"].dt.weekday.map(dias_es)
+    # df["dow"] = df["date"].dt.day_name(locale="es_ES")
+    df["week"] = df["date"].dt.isocalendar().week
+    daily_filter = (df["nes"] == nes) & (df["nmun"] == nmun)
+    df_daily = df[daily_filter]
+    sel_columns = ["cc", "velvien", "dirvienc", "probprec", "desciel",
+                   "date", "dow", "tmax", "tmin"]
+    weather_report = ""
+    for row in df_daily[sel_columns].itertuples():
+        header = f"{row.date} - {row.dow.capitalize()}".center(15, "*")
+        weather_report += header + "\n"
+        weather_report += f"\tCobertura de nubes: {row.cc} %\n"
+        weather_report += f"\tCielo: {row.desciel}\n"
+        weather_report += f"\tVelocidad de viento: {row.velvien}km/h\n"
+        weather_report += f"\tDireccion de viento: {row.dirvienc}\n"
+        weather_report += f"\tProb lluvia: {row.probprec} %\n"
+        weather_report += f"\tProb lluvia: {row.probprec}\n"
+        weather_report += f"\tTemperatura max: {row.tmax} °C\n"
+        weather_report += f"\tTemperatura min: {row.tmin}°C\n"
 
-# daily forecast
-daily_filter = (df["nes"] == "Nuevo León") & (df["nmun"] == nmun)
-df_daily = df[daily_filter]
-sel_columns = ["nes", "nmun", "cc", "velvien",
-               "dirvienc", "ndia", "dloc""", "tmax", "tmin"]
-print(df_daily[sel_columns])
+    print(weather_report)

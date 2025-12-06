@@ -103,11 +103,21 @@ async def request_file():
         df["week"] = df["date"].dt.isocalendar().week
         daily_filter = (df["nes"] == nes) & (df["nmun"] == nmun)
         df_daily = df[daily_filter]
-        sel_columns = ["cc", "velvien",
+        sel_columns = ["cc", "velvien", "dirvienc", "probprec", "desciel",
                        "date", "dow", "tmax", "tmin"]
-        text = df_daily[sel_columns].to_string(index=False)
-        print(text)
-    return text
+        weather_report = ""
+        for row in df_daily[sel_columns].itertuples():
+            header = f"{row.date} - {row.dow.capitalize()}".center(15, "*")
+            weather_report += header + "\n"
+            weather_report += f"\tCobertura de nubes: {row.cc} %\n"
+            weather_report += f"\tCielo: {row.desciel}\n"
+            weather_report += f"\tVelocidad de viento: {row.velvien}km/h\n"
+            weather_report += f"\tDireccion de viento: {row.dirvienc}\n"
+            weather_report += f"\tProb lluvia: {row.probprec} %\n"
+            weather_report += f"\tProb lluvia: {row.probprec}\n"
+            weather_report += f"\tTemperatura max: {row.tmax} °C\n"
+            weather_report += f"\tTemperatura min: {row.tmin}°C\n"
+    return weather_report
 
 
 async def main():
