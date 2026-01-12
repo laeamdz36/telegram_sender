@@ -16,6 +16,7 @@ import logging
 from app.dev.dev_datetimes import get_system_time
 from app.weather import request_file
 from app.dates_infos import get_message
+from app.phrase_otd.phrase_main import requester, format_data
 print(">>> EXECUTANDO app/main.py (PID)",
       __import__("os").getpid(), "stdout:", sys.stdout)
 sys.stdout.flush()
@@ -183,7 +184,11 @@ async def send_msg(msg: SensorReport):
 async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     """Test chatid_local for telegram group"""
 
+    task = asyncio.create_task(requester())
+    phrase = await task
+    phrase = format_data(phrase)
     msg = get_message()
+    msg = f"{msg}\n" + phrase
     background_task.add_task(send_tel_izta, msg)
     return {"status": "ok"}
 
@@ -202,7 +207,11 @@ async def pub_channel1(msg: InMessage, background_task: BackgroundTasks):
 async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
 
+    task = asyncio.create_task(requester())
+    phrase = await task
+    phrase = format_data(phrase)
     msg = get_message()
+    msg = f"{msg}\n" + phrase
     background_task.add_task(send_dev_channel, msg)
     return {"status": "ok"}
 
