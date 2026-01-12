@@ -186,9 +186,10 @@ async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
 
     task = asyncio.create_task(requester())
     phrase = await task
-    phrase = format_data(phrase)
-    msg = get_message()
-    msg = f"{msg}\n" + phrase
+    if phrase is not None:
+        phrase = format_data(phrase)
+        msg = get_message()
+        msg = f"{msg}\n" + phrase
     background_task.add_task(send_tel_izta, msg)
     return {"status": "ok"}
 
