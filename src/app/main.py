@@ -1,33 +1,31 @@
 """Aplication to send notifications to telegram."""
 import asyncio
-import sys
 import datetime as dt
+from typing import List
 from pathlib import Path
 from functools import lru_cache
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Depends
+from fastapi import Request
+from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 from telegram import Bot
-import arrow
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pydantic import BaseModel, ValidationError, Field
-from app.load_config import load_config
-import logging
-from app.dev.dev_datetimes import get_system_time
 from app.weather import request_file
 from app.dates_infos import get_message
 from app.phrase_otd.phrase_main import requester, format_data
-print(">>> EXECUTANDO app/main.py (PID)",
-      __import__("os").getpid(), "stdout:", sys.stdout)
-sys.stdout.flush()
+from app.countdowns import rest_control as ctd
+from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
+from app.logger import logger
 
-logger = logging.getLogger("app_telebot")
-logger.addHandler(logging.StreamHandler())
-log_uv_err = logging.getLogger("uvicorn.error")
-
-app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
+logger.info("Starting APP")
+# logger.addHandler(logging.StreamHandler())
+# log_uv_err = logging.getLogger("uvicorn.error")
+
+logger.info("APP instantiation DONE!")
 
 scheduler = AsyncIOScheduler()
 
@@ -78,22 +76,27 @@ def get_settings():
     return settings
 
 
-async def pub_logger_dev():
-    """Function async to development, publish in log current datetime"""
+# async def pub_logger_dev():
+#     """Function async to development, publish in log current datetime"""
 
-    dt_now = arrow.utcnow().to("local")
-    log_uv_err.info("DATE: %s", dt_now.format())
-    print("Log form print")
+#     dt_now = arrow.utcnow().to("local")
+#     log_uv_err.info("DATE: %s", dt_now.format())
+#     print("Log form print")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle the start and stop of scheduler of APScheduler"""
 
-    print("Printing form starting")
-    log_uv_err.info("Starting app lifespan")
-    log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
-    scheduler.add_job(pub_logger_dev, "interval", seconds=5)
+    # Initializing scheduler
+    logger.info("Printing form starting")
+    # log_uv_err.info("Starting app lifespan")
+    # log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
+    # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
+
+    # init databases
+    logger.info("Starting database")
+    ctd.mod_init()
 
     scheduler.start()
     # Code up to yield is executed while server is running
@@ -101,6 +104,39 @@ async def lifespan(app: FastAPI):
     # Code after yield is executed when server is closed
     logger.info("Stopping APScheduler...")
     scheduler.shutdown()
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/db")
+def register_form(request: Request):
+    """Dev"""
+    return "Hello"
+
+
+def get_db_session():
+    """Get the session to the database"""
+    engine = ctd.get_engine()
+    with Session(engine) as session:
+        yield session
+
+
+@app.post("/dev_db/person", response_model=Person)
+def insert_person(person_data: PersonCreate, session: Session = Depends(get_db_session)):
+    """Insert person in the database"""
+
+    pserson_db = Personv2.model_validate(person_data)
+    session.add(pserson_db)
+    session.commit()
+    session.refresh(pserson_db)
+    return pserson_db
+
+
+@app.get("/dev_db/persons", response_model=List[Person])
+def read_persons(session: Session = Depends(get_db_session)):
+    """Get all persons in the database"""
+    persons = session.exec(select(Personv2)).all()
+    return persons
 
 
 async def send_message(text):
@@ -143,17 +179,6 @@ async def send_dev_channel(msg):
         chat_id = settings.chatid_devChannel
         async with bot:
             await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
-
-
-async def get_weather():
-    """Get the SMN api data"""
-
-    # api for data forecast data by day and to 3 days
-    url_1 = "https://smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=1"
-    # api for data forecast by hour and by 48 hours
-    url_3 = "https://smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=3"
-
-    storm_endpoint = "https://api.stormglass.io/v2"
 
 
 async def weather_exec():
@@ -223,13 +248,6 @@ async def get_system_datetime():
 
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {"status": "ok", "current_time": current_time}
-
-
-@app.get("/weather/get_file/")
-async def serve_weather_data():
-    """Function to handle request and processing weather data"""
-
-    # execute the function to request the file
 
 
 if __name__ == "__main__":

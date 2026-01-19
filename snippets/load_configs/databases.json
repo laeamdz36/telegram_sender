@@ -1,0 +1,8 @@
+{
+    "databases": [
+        {
+            "name": "birthdays",
+            "extension": "db"
+        }
+    ]
+}

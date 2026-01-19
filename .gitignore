@@ -39,3 +39,8 @@ db.sqlite3         # Bases de datos locales
 # Archivos temporales del sistema operativo
 .DS_Store          # Archivo de macOS
 Thumbs.db          # Archivo de Windows
+
+# Project files:
+data/
+app/data
+*.db
