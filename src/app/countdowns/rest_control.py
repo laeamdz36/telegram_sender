@@ -5,6 +5,7 @@ from datetime import date
 from sqlmodel import SQLModel, create_engine, Session
 import app.countdowns.funcs as dbs
 from app.countdowns.class_schemas import Person
+from app.logger import logger
 
 
 def _bd_url():
@@ -14,11 +15,13 @@ def _bd_url():
     db = dbs.get_databases()[0]
     # get the db path
     db_path = Path(__file__).resolve()
+    logger.info(f"Path resolved: {db_path}")
     for path in db_path.parents:
         if "app" in path.name:
+            logger.info(f"app in path.name: {path}")
             db_path = path.joinpath("data").joinpath(db)
             break
-
+    logger.info(f"Database in: {db_path}")
     db_url = f"sqlite:///{db_path}"
     return db_url
 

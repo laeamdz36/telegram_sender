@@ -14,7 +14,7 @@ services:
     ports:
       - "8036:8036"
     volumes:
-      - data_volume:/app/data
+      - data_volume:/app/app/data
 
 volumes:
   data_volume:

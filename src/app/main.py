@@ -18,6 +18,7 @@ from app.phrase_otd.phrase_main import requester, format_data
 from app.countdowns import rest_control as ctd
 from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
 from app.logger import logger
+from app.countdowns.checkers import compute_next_date
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
@@ -76,12 +77,16 @@ def get_settings():
     return settings
 
 
-# async def pub_logger_dev():
-#     """Function async to development, publish in log current datetime"""
+async def pub_dev_logger():
+    """Developmernt test scheduler"""
 
-#     dt_now = arrow.utcnow().to("local")
-#     log_uv_err.info("DATE: %s", dt_now.format())
-#     print("Log form print")
+    logger.info("***** Live string schduler *****")
+
+
+async def execute_date_computes():
+    """Execute date monitoring for upcoming dates"""
+
+    compute_next_date()
 
 
 @asynccontextmanager
@@ -92,6 +97,8 @@ async def lifespan(app: FastAPI):
     logger.info("Printing form starting")
     # log_uv_err.info("Starting app lifespan")
     # log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
+    logger.info("Adding Scheduler job to APSchedule")
+    scheduler.add_job(execute_date_computes, "interval", seconds=5)
     # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
 
     # init databases
