@@ -5,7 +5,8 @@ from typing import List
 from pathlib import Path
 from functools import lru_cache
 from fastapi import FastAPI, BackgroundTasks, Depends
-from fastapi import Request
+from fastapi import Request, Response
+from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 from telegram import Bot
@@ -18,7 +19,7 @@ from app.phrase_otd.phrase_main import requester, format_data
 from app.countdowns import rest_control as ctd
 from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
 from app.logger import logger
-from app.countdowns.checkers import compute_next_date
+from app.countdowns.checkers import compute_next_date, create_df
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
@@ -98,12 +99,12 @@ async def lifespan(app: FastAPI):
     # log_uv_err.info("Starting app lifespan")
     # log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
     logger.info("Adding Scheduler job to APSchedule")
-    scheduler.add_job(execute_date_computes, "interval", seconds=5)
+    # scheduler.add_job(execute_date_computes, "interval", seconds=5)s
     # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
 
     # init databases
     logger.info("Starting database")
-    ctd.mod_init()
+    await ctd.create_db()
 
     scheduler.start()
     # Code up to yield is executed while server is running
@@ -115,35 +116,49 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/db")
-def register_form(request: Request):
-    """Dev"""
-    return "Hello"
+@app.get("/db/get_dataframe")
+def get_dataframe(response=Response):
+    """Return the dataframe for all database"""
+
+    create_df()
+    response.status_code = 200
 
 
-def get_db_session():
-    """Get the session to the database"""
-    engine = ctd.get_engine()
-    with Session(engine) as session:
-        yield session
+# @app.post("/dev_db/person", response_model=Person)
+# def insert_person(person_data: PersonCreate, session: Session = Depends(get_db_session)):
+#     """Insert person in the database"""
+
+#     pserson_db = Personv2.model_validate(person_data)
+#     session.add(pserson_db)
+#     session.commit()
+#     session.refresh(pserson_db)
+#     return pserson_db
 
 
-@app.post("/dev_db/person", response_model=Person)
-def insert_person(person_data: PersonCreate, session: Session = Depends(get_db_session)):
-    """Insert person in the database"""
-
-    pserson_db = Personv2.model_validate(person_data)
-    session.add(pserson_db)
-    session.commit()
-    session.refresh(pserson_db)
-    return pserson_db
+# @app.get("/dev_db/persons", response_model=List[Person])
+# def read_persons(session: Session = Depends(get_db_session)):
+#     """Get all persons in the database"""
+#     persons = session.exec(select(Personv2)).all()
+#     return persons
 
 
-@app.get("/dev_db/persons", response_model=List[Person])
-def read_persons(session: Session = Depends(get_db_session)):
-    """Get all persons in the database"""
-    persons = session.exec(select(Personv2)).all()
-    return persons
+@app.get("/db/get_all_persons", response_model=List[Personv2])
+async def read_all_persons():
+    """Get all persons from database"""
+
+    return await ctd.get_all_persons()
+
+
+@app.post("/db/insert_person", response_model=Personv2)
+async def write_db_person(person_data: PersonCreate,
+                          session: AsyncSession = Depends(ctd.get_session_dep)):
+    """Write a record of person to the database"""
+
+    person_db = Personv2.model_validate(person_data)
+    session.add(person_db)
+    await session.flush()
+    await session.refresh(person_db)
+    return person_db
 
 
 async def send_message(text):
