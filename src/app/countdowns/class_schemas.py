@@ -9,9 +9,10 @@ class Person(SQLModel, table=True):
     """Schema for person definition to Database"""
     id: int | None = Field(default=None, primary_key=True)
     name: str
-    second_name: str
+    second_name: str | None = Field(default=None)
     last_name: str
     birth_date: date
+    relationship: str
 
 
 class PersonBase(SQLModel):
@@ -20,6 +21,7 @@ class PersonBase(SQLModel):
     second_name: str
     last_name: str
     birth_date: date
+    relationship: str
 
 
 class Personv2(PersonBase, table=True):

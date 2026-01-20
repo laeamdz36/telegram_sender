@@ -18,7 +18,7 @@ from app.phrase_otd.phrase_main import requester, format_data
 from app.countdowns import rest_control as ctd
 from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
 from app.logger import logger
-from app.countdowns.checkers import build_dataframe, compute_next_date
+from app.countdowns.checkers import build_dataframe, compute_next_date, get_family_birthday, get_friend_birthday
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
@@ -88,7 +88,11 @@ async def analytics_job():
 
     # call analysis job
     df = await build_dataframe()
-    return df
+    return {
+        "columns": df.columns.tolist(),
+        "rows": df.to_dict(orient="records"),
+        "row_len": len(df)
+    }
 
 
 @asynccontextmanager
@@ -102,7 +106,7 @@ async def lifespan(app: FastAPI):
     logger.info("Adding Scheduler job to APSchedule")
     # scheduler.add_job(execute_date_computes, "interval", seconds=5)s
     # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
-    scheduler.add_job(compute_next_date, "interval", seconds=10)
+    # scheduler.add_job(compute_next_date, "interval", seconds=10)
 
     # init databases
     logger.info("Starting database")
@@ -216,8 +220,13 @@ async def weather_exec():
 @app.post("/send_message/")
 async def send_msg(msg: SensorReport):
     """Send telegram for weather sensor data for home"""
+
     # insert datetime
     today = dt.datetime.now().strftime("%Y-%d-%m %H:%M:%S")
+    task_birthday = asyncio.create_task(get_family_birthday())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    msg_birthday = await task_birthday
+    msg_birthday_friend = await task_birthday_friend
     text = msg.message + " " + today
     text += f"\nRoom: {msg.Room}"
     text += f"\nLiving Room: {msg.LivingRoom}"
@@ -226,6 +235,8 @@ async def send_msg(msg: SensorReport):
     if weather_forecast:
         text += f"\n{weather_forecast}"
     text += f"\n{get_message()}"
+    text = f"{text}\n" + msg_birthday
+    text = f"{text}\n" + msg_birthday_friend
     task = asyncio.create_task(send_message(text))
     await task
 
@@ -235,11 +246,14 @@ async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     """Test chatid_local for telegram group"""
 
     task = asyncio.create_task(requester())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    msg_birthday_friend = await task_birthday_friend
     phrase = await task
     if phrase is not None:
         phrase = format_data(phrase)
         msg = get_message()
         msg = f"{msg}\n" + phrase
+    msg += f"{msg}\n" + msg_birthday_friend
     background_task.add_task(send_tel_izta, msg)
     return {"status": "ok"}
 
@@ -259,10 +273,16 @@ async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
 
     task = asyncio.create_task(requester())
+    task_birthday = asyncio.create_task(get_family_birthday())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
     phrase = await task
+    msg_birthday = await task_birthday
+    msg_birthday_friend = await task_birthday_friend
     phrase = format_data(phrase)
     msg = get_message()
     msg = f"{msg}\n" + phrase
+    msg = f"{msg}\n" + msg_birthday
+    msg = f"{msg}\n" + msg_birthday_friend
     background_task.add_task(send_dev_channel, msg)
     return {"status": "ok"}
 
