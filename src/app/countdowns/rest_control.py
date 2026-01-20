@@ -1,14 +1,13 @@
 """Module to handle resquests to database"""
 
 from pathlib import Path
-from datetime import date
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 import app.countdowns.funcs as dbs
-from app.countdowns.class_schemas import Person, Personv2
+from app.countdowns.class_schemas import Personv2
 from app.logger import logger
 
 
@@ -58,7 +57,7 @@ async def get_session(commit: bool = True):
 
 
 async def get_session_dep(commit: bool = True) -> AsyncGenerator[AsyncSession, None]:
-    """Get the session to the current working database"""
+    """Return AsyncSession for FastApi dependency"""
 
     async with AsyncSession(engine) as session:
         try:

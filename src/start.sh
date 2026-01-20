@@ -1,6 +1,8 @@
 #!/bin/bash
 if [ -z "$WEB_CONCURRENCY" ]; then
-  WEB_CONCURRENCY=4
+# modified to only 1 worker, TODO: Create a independent service
+# for async scheduler
+  WEB_CONCURRENCY=1
 fi
 
 exec gunicorn app.main:app \

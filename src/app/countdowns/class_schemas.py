@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel
 
 
 class Person(SQLModel, table=True):
-    """Schema for person definition"""
+    """Schema for person definition to Database"""
     id: int | None = Field(default=None, primary_key=True)
     name: str
     second_name: str
@@ -15,7 +15,7 @@ class Person(SQLModel, table=True):
 
 
 class PersonBase(SQLModel):
-    """Schema for person definition"""
+    """Schema for data validation from clients over endpoints"""
     name: str
     second_name: str
     last_name: str
@@ -23,7 +23,7 @@ class PersonBase(SQLModel):
 
 
 class Personv2(PersonBase, table=True):
-    """DB table, heritance from Base and add table"""
+    """Schema for person definition to Database"""
     id: Optional[int] = Field(default=None, primary_key=True)
 
 

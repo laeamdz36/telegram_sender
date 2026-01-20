@@ -7,7 +7,6 @@ from functools import lru_cache
 from fastapi import FastAPI, BackgroundTasks, Depends
 from fastapi import Request, Response
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 from telegram import Bot
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +18,7 @@ from app.phrase_otd.phrase_main import requester, format_data
 from app.countdowns import rest_control as ctd
 from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
 from app.logger import logger
-from app.countdowns.checkers import compute_next_date, create_df
+from app.countdowns.checkers import build_dataframe, compute_next_date
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
@@ -84,10 +83,12 @@ async def pub_dev_logger():
     logger.info("***** Live string schduler *****")
 
 
-async def execute_date_computes():
-    """Execute date monitoring for upcoming dates"""
+async def analytics_job():
+    """Perform analysis over database"""
 
-    compute_next_date()
+    # call analysis job
+    df = await build_dataframe()
+    return df
 
 
 @asynccontextmanager
@@ -101,6 +102,7 @@ async def lifespan(app: FastAPI):
     logger.info("Adding Scheduler job to APSchedule")
     # scheduler.add_job(execute_date_computes, "interval", seconds=5)s
     # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
+    scheduler.add_job(compute_next_date, "interval", seconds=10)
 
     # init databases
     logger.info("Starting database")
@@ -117,11 +119,12 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/db/get_dataframe")
-def get_dataframe(response=Response):
+async def get_dataframe(response=Response):
     """Return the dataframe for all database"""
 
-    create_df()
-    response.status_code = 200
+    task = asyncio.create_task(analytics_job())
+    df = await task
+    return df.to_dict(orient="records")
 
 
 # @app.post("/dev_db/person", response_model=Person)
