@@ -112,9 +112,9 @@ async def request_file():
             weather_report += f"\tCobertura de nubes: {row.cc} %\n"
             weather_report += f"\tCielo: {row.desciel}\n"
             weather_report += f"\tVelocidad de viento: {row.velvien}km/h\n"
-            weather_report += f"\tDireccion de viento: {row.dirvienc}\n"
+            # weather_report += f"\tDireccion de viento: {row.dirvienc}\n"
             weather_report += f"\tProb lluvia: {row.probprec} %\n"
-            weather_report += f"\tProb lluvia: {row.probprec}\n"
+            # weather_report += f"\tProb lluvia: {row.probprec}\n"
             weather_report += f"\tTemperatura max: {row.tmax} °C\n"
             weather_report += f"\tTemperatura min: {row.tmin}°C\n"
     return weather_report

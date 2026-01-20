@@ -31,9 +31,12 @@ def init_logger2():
 def init_logger():
     """Init logger with uvicorn"""
 
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     logger = logging.getLogger("app_telebot")
     logger.setLevel(logging.INFO)
-    logger.propagate = True
 
     return logger
 

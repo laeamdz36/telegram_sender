@@ -1,33 +1,32 @@
 """Aplication to send notifications to telegram."""
 import asyncio
-import sys
 import datetime as dt
+from typing import List
 from pathlib import Path
 from functools import lru_cache
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Depends
+from fastapi import Request, Response
+from sqlmodel.ext.asyncio.session import AsyncSession
 from contextlib import asynccontextmanager
 from telegram import Bot
-import arrow
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pydantic import BaseModel, ValidationError, Field
-from app.load_config import load_config
-import logging
-from app.dev.dev_datetimes import get_system_time
 from app.weather import request_file
 from app.dates_infos import get_message
 from app.phrase_otd.phrase_main import requester, format_data
-print(">>> EXECUTANDO app/main.py (PID)",
-      __import__("os").getpid(), "stdout:", sys.stdout)
-sys.stdout.flush()
+from app.countdowns import rest_control as ctd
+from app.countdowns.class_schemas import Person, Personv2, PersonCreate, PersonBase
+from app.logger import logger
+from app.countdowns.checkers import build_dataframe, compute_next_date, get_family_birthday, get_friend_birthday
 
-logger = logging.getLogger("app_telebot")
-logger.addHandler(logging.StreamHandler())
-log_uv_err = logging.getLogger("uvicorn.error")
-
-app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 ENV_FILE_PATH = BASE_DIR / ".env"
+logger.info("Starting APP")
+# logger.addHandler(logging.StreamHandler())
+# log_uv_err = logging.getLogger("uvicorn.error")
+
+logger.info("APP instantiation DONE!")
 
 scheduler = AsyncIOScheduler()
 
@@ -78,22 +77,40 @@ def get_settings():
     return settings
 
 
-async def pub_logger_dev():
-    """Function async to development, publish in log current datetime"""
+async def pub_dev_logger():
+    """Developmernt test scheduler"""
 
-    dt_now = arrow.utcnow().to("local")
-    log_uv_err.info("DATE: %s", dt_now.format())
-    print("Log form print")
+    logger.info("***** Live string schduler *****")
+
+
+async def analytics_job():
+    """Perform analysis over database"""
+
+    # call analysis job
+    df = await build_dataframe()
+    return {
+        "columns": df.columns.tolist(),
+        "rows": df.to_dict(orient="records"),
+        "row_len": len(df)
+    }
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle the start and stop of scheduler of APScheduler"""
 
-    print("Printing form starting")
-    log_uv_err.info("Starting app lifespan")
-    log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
-    scheduler.add_job(pub_logger_dev, "interval", seconds=5)
+    # Initializing scheduler
+    logger.info("Printing form starting")
+    # log_uv_err.info("Starting app lifespan")
+    # log_uv_err.info("Adding job to APSchedule - %s", "pub_logger_dev")
+    logger.info("Adding Scheduler job to APSchedule")
+    # scheduler.add_job(execute_date_computes, "interval", seconds=5)s
+    # scheduler.add_job(pub_logger_dev, "interval", seconds=5)
+    # scheduler.add_job(compute_next_date, "interval", seconds=10)
+
+    # init databases
+    logger.info("Starting database")
+    await ctd.create_db()
 
     scheduler.start()
     # Code up to yield is executed while server is running
@@ -101,6 +118,54 @@ async def lifespan(app: FastAPI):
     # Code after yield is executed when server is closed
     logger.info("Stopping APScheduler...")
     scheduler.shutdown()
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/db/get_dataframe")
+async def get_dataframe(response=Response):
+    """Return the dataframe for all database"""
+
+    task = asyncio.create_task(analytics_job())
+    df = await task
+    return df.to_dict(orient="records")
+
+
+# @app.post("/dev_db/person", response_model=Person)
+# def insert_person(person_data: PersonCreate, session: Session = Depends(get_db_session)):
+#     """Insert person in the database"""
+
+#     pserson_db = Personv2.model_validate(person_data)
+#     session.add(pserson_db)
+#     session.commit()
+#     session.refresh(pserson_db)
+#     return pserson_db
+
+
+# @app.get("/dev_db/persons", response_model=List[Person])
+# def read_persons(session: Session = Depends(get_db_session)):
+#     """Get all persons in the database"""
+#     persons = session.exec(select(Personv2)).all()
+#     return persons
+
+
+@app.get("/db/get_all_persons", response_model=List[Personv2])
+async def read_all_persons():
+    """Get all persons from database"""
+
+    return await ctd.get_all_persons()
+
+
+@app.post("/db/insert_person", response_model=Personv2)
+async def write_db_person(person_data: PersonCreate,
+                          session: AsyncSession = Depends(ctd.get_session_dep)):
+    """Write a record of person to the database"""
+
+    person_db = Personv2.model_validate(person_data)
+    session.add(person_db)
+    await session.flush()
+    await session.refresh(person_db)
+    return person_db
 
 
 async def send_message(text):
@@ -145,17 +210,6 @@ async def send_dev_channel(msg):
             await bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
 
 
-async def get_weather():
-    """Get the SMN api data"""
-
-    # api for data forecast data by day and to 3 days
-    url_1 = "https://smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=1"
-    # api for data forecast by hour and by 48 hours
-    url_3 = "https://smn.conagua.gob.mx/tools/GUI/webservices/index.php?method=3"
-
-    storm_endpoint = "https://api.stormglass.io/v2"
-
-
 async def weather_exec():
     """Call async funciton and return response"""
 
@@ -166,8 +220,13 @@ async def weather_exec():
 @app.post("/send_message/")
 async def send_msg(msg: SensorReport):
     """Send telegram for weather sensor data for home"""
+
     # insert datetime
     today = dt.datetime.now().strftime("%Y-%d-%m %H:%M:%S")
+    task_birthday = asyncio.create_task(get_family_birthday())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    msg_birthday = await task_birthday
+    msg_birthday_friend = await task_birthday_friend
     text = msg.message + " " + today
     text += f"\nRoom: {msg.Room}"
     text += f"\nLiving Room: {msg.LivingRoom}"
@@ -176,6 +235,8 @@ async def send_msg(msg: SensorReport):
     if weather_forecast:
         text += f"\n{weather_forecast}"
     text += f"\n{get_message()}"
+    text = f"{text}\n" + msg_birthday
+    text = f"{text}\n" + msg_birthday_friend
     task = asyncio.create_task(send_message(text))
     await task
 
@@ -185,11 +246,14 @@ async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     """Test chatid_local for telegram group"""
 
     task = asyncio.create_task(requester())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    msg_birthday_friend = await task_birthday_friend
     phrase = await task
     if phrase is not None:
         phrase = format_data(phrase)
         msg = get_message()
         msg = f"{msg}\n" + phrase
+    msg += f"{msg}\n" + msg_birthday_friend
     background_task.add_task(send_tel_izta, msg)
     return {"status": "ok"}
 
@@ -209,10 +273,16 @@ async def pub_dev_channel(msg: InMessage, background_task: BackgroundTasks):
     """Pub on chanel ID dev """
 
     task = asyncio.create_task(requester())
+    task_birthday = asyncio.create_task(get_family_birthday())
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
     phrase = await task
+    msg_birthday = await task_birthday
+    msg_birthday_friend = await task_birthday_friend
     phrase = format_data(phrase)
     msg = get_message()
     msg = f"{msg}\n" + phrase
+    msg = f"{msg}\n" + msg_birthday
+    msg = f"{msg}\n" + msg_birthday_friend
     background_task.add_task(send_dev_channel, msg)
     return {"status": "ok"}
 
@@ -223,13 +293,6 @@ async def get_system_datetime():
 
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {"status": "ok", "current_time": current_time}
-
-
-@app.get("/weather/get_file/")
-async def serve_weather_data():
-    """Function to handle request and processing weather data"""
-
-    # execute the function to request the file
 
 
 if __name__ == "__main__":

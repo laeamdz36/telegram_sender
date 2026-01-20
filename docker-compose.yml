@@ -13,3 +13,8 @@ services:
       TZ: America/Mexico_City
     ports:
       - "8036:8036"
+    volumes:
+      - data_volume:/app/app/data
+
+volumes:
+  data_volume:
