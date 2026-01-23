@@ -245,16 +245,49 @@ async def send_msg(msg: SensorReport):
 async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
     """Test chatid_local for telegram group"""
 
+    # ------------------------------------
+    # publish on dev channel
+    # ------------------------------------
+
+    # execute request to phrase of the day
     task = asyncio.create_task(requester())
+    # execute process to retrive database data for birthdays
     task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    # get the birthday data and phrase
     msg_birthday_friend = await task_birthday_friend
     phrase = await task
+    # get the message for countdays
+    msg = get_message()
     if phrase is not None:
         phrase = format_data(phrase)
-        msg = get_message()
         msg = f"{msg}\n" + phrase
-    msg += f"{msg}\n" + msg_birthday_friend
-    background_task.add_task(send_tel_izta, msg)
+    msg = f"{msg}\n" + msg_birthday_friend
+    background_task.add_task(send_dev_channel, msg)
+    return {"status": "ok"}
+
+
+@app.post("/send_izta_test/")
+async def notify_izta_test(msg: InMessage, background_task: BackgroundTasks):
+    """Test chatid_local for telegram group"""
+
+    # ------------------------------------
+    # publish on dev channel
+    # ------------------------------------
+
+    # execute request to phrase of the day
+    task = asyncio.create_task(requester())
+    # execute process to retrive database data for birthdays
+    task_birthday_friend = asyncio.create_task(get_friend_birthday())
+    # get the birthday data and phrase
+    msg_birthday_friend = await task_birthday_friend
+    phrase = await task
+    # get the message for countdays
+    msg = get_message()
+    if phrase is not None:
+        phrase = format_data(phrase)
+        msg = f"{msg}\n" + phrase
+    msg = f"{msg}\n" + msg_birthday_friend
+    background_task.add_task(send_dev_channel, msg)
     return {"status": "ok"}
 
 

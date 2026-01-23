@@ -4,6 +4,7 @@ import asyncio
 import json
 import httpx
 import ssl
+from app.logger import logger
 
 URL1 = "https://proverbia.net/frase-del-dia"
 
@@ -29,7 +30,7 @@ def permisive_context_phrase() -> ssl.SSLContext:
     return ssl_context
 
 
-async def requester():
+async def requester() -> str | None:
     """Request to the web apis the content data"""
 
     url = get_url()
@@ -39,9 +40,12 @@ async def requester():
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(e)
+            data = None
         except httpx.RequestError as e:
             response = None
-            print(f"Error on request {e}")
+            logger.error(e)
             data = None
     return data
 
@@ -58,6 +62,7 @@ async def main():
     """Run main execution"""
 
     task = asyncio.create_task(requester())
+
     data = await task
     format_data(data)
 
