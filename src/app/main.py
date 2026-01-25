@@ -262,7 +262,7 @@ async def notify_izta(msg: InMessage, background_task: BackgroundTasks):
         phrase = format_data(phrase)
         msg = f"{msg}\n" + phrase
     msg = f"{msg}\n" + msg_birthday_friend
-    background_task.add_task(send_dev_channel, msg)
+    background_task.add_task(send_tel_izta, msg)
     return {"status": "ok"}
 
 
